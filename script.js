@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
 
       // Обработка данных в зависимости от формата файла
-      const processedData = data.map(row => {
+      return data.map(row => {
         if (!row[0]) return null; // Пропускаем пустые строки
 
         const rawName = row[0]?.trim();
@@ -32,9 +32,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
         return { cafe: cafeName, id, fullName, discount };
       }).filter(item => item); // Убираем пустые записи
-
-      console.log(`Обработанные данные из ${fileUrl}:`, processedData); // Отладочный вывод
-      return processedData;
     } catch (error) {
       console.error(`Ошибка при загрузке ${fileUrl}:`, error);
       return [];
@@ -61,10 +58,10 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
-        // Поиск по фамилии или номеру скидки
+        // Поиск по фамилии или номеру скидки (точное совпадение)
         const matches = allData.filter(item =>
-          item.fullName?.toLowerCase().includes(input) || // Поиск по фамилии
-          item.id?.toLowerCase().includes(input) // Поиск по номеру скидки
+          (item.id && item.id.toLowerCase() === input) || // Точное совпадение по ID
+          (item.fullName && item.fullName.toLowerCase().includes(input)) // Поиск по фамилии
         );
 
         if (matches.length > 0) {
