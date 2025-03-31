@@ -40,9 +40,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Загрузка данных из всех файлов
   Promise.all([
-    loadAndProcessExcel("dataMelnitsa.xlsx", "Мельница"),
-    loadAndProcessExcel("dataBochka.xlsx", "Бочка"),
-    loadAndProcessExcel("dataBufet.xlsx", "Буфет")
+    loadAndProcessExcel("dataMelnitsa.xls", "Мельница"),
+    loadAndProcessExcel("dataBochka.xls", "Бочка"),
+    loadAndProcessExcel("dataBufet.xls", "Буфет")
   ])
     .then(results => {
       allData = [].concat(...results); // Объединяем все данные
