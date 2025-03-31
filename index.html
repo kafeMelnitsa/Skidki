@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Поиск скидок</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    input {
+      padding: 10px;
+      width: 300px;
+      font-size: 16px;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+    }
+    h3 {
+      color: #333;
+      font-weight: bold;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Поиск скидок по фамилии или номеру</h1>
+  <input type="text" id="searchInput" placeholder="Введите фамилию или номер" oninput="searchDiscount()">
+  <div id="result"></div>
+
+  <!-- Подключение библиотеки XLSX -->
+  <script src="xlsx.full.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
