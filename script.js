@@ -29,14 +29,16 @@ document.addEventListener("DOMContentLoaded", function () {
       return false;
     }
 
-    const userInput = prompt("Введите пароль:");
+    while (true) {
+      const userInput = prompt("Введите пароль");
 
-    if (userInput === correctPassword) {
-      alert("Загружаю данные...");
-      return true;
-    } else {
-      alert("Неверный пароль. Доступ запрещён.");
-      return false;
+      if (userInput === correctPassword) {
+        // Если пароль верный, выходим из цикла
+        return true;
+      } else {
+        alert("Неверный пароль. Попробуйте снова.");
+        // Цикл продолжается, и пользователь снова вводит пароль
+      }
     }
   }
 
@@ -82,7 +84,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const isPasswordCorrect = await checkPassword();
 
     if (!isPasswordCorrect) {
-      // Если пароль неверный, останавливаем выполнение
+      // Если пароль так и не был введён правильно, останавливаем выполнение
       return;
     }
 
