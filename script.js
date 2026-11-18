@@ -12,9 +12,9 @@ document.addEventListener("DOMContentLoaded", function () {
       className: "bochka",
       displayName: "«Бочка»"
     },
-    "Гран Буфет": {
+    "Грандъ Буфетъ": {
       className: "bufet",
-      displayName: "«Гран Буфет»"
+      displayName: "«Грандъ Буфетъ»"
     }
   };
 
@@ -249,7 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Promise.all([
       loadAndProcessExcel("dataMelnitsa.xls", "Мельница"),
       loadAndProcessExcel("dataBochka.xls", "Бочка"),
-      loadAndProcessExcel("dataBufet.xls", "Гран Буфет")
+      loadAndProcessExcel("dataBufet.xls", "Грандъ Буфетъ")
     ])
       .then(results => {
         allData = [].concat(...results);
