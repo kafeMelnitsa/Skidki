@@ -228,6 +228,28 @@ document.addEventListener("DOMContentLoaded", function () {
     return trimmed;
   }
 
+  // Генерация HTML разметки для одной карточки
+  function buildCardHtml(match, className, completedWords, incompleteWord) {
+    const formattedDiscount = formatDiscount(match.discount);
+    const highlightedName = highlightGuestName(match.fullName, completedWords, incompleteWord);
+
+    return `
+      <li class="discount-item">
+        <div class="guest-info">
+          <span class="guest-name">${highlightedName}</span>
+          <div class="card-number-badge">
+            <span class="card-number-prefix">КАРТА</span>
+            <span>№ ${escapeHtml(match.id)}</span>
+          </div>
+        </div>
+        <div class="discount-value-pill">
+          <span class="discount-badge ${className}">${escapeHtml(formattedDiscount)}</span>
+          <span class="discount-label">скидка</span>
+        </div>
+      </li>
+    `;
+  }
+
   // Очистка поиска
   window.clearSearch = function () {
     searchInput.value = "";
@@ -267,26 +289,76 @@ document.addEventListener("DOMContentLoaded", function () {
         // Автофокус в поле поиска
         setTimeout(() => searchInput.focus(), 100);
 
-        // Очередь анимации и таймер debounce
+        // Управление поиском, подгрузкой и наблюдателем
         let searchDebounceTimer = null;
-        let currentRenderRafId = null;
-        const DEBOUNCE_DELAY = 140;
-        const BATCH_SIZE = 120;
+        let activeObserver = null;
+        let lastQuerySignature = "";
+        let activeSearchState = null;
+        const DEBOUNCE_DELAY = 120;
+        const PER_CAFE_INITIAL = 30;
+        const PER_CAFE_BATCH = 30;
 
-        function cancelPendingRender() {
-          if (currentRenderRafId !== null) {
-            cancelAnimationFrame(currentRenderRafId);
-            currentRenderRafId = null;
+        function cleanupObserver() {
+          if (activeObserver) {
+            activeObserver.disconnect();
+            activeObserver = null;
           }
         }
 
-        // Функция фактического поиска и порционной отрисовки
-        function executeSearch() {
-          cancelPendingRender();
+        // Плавная догрузка следующей порции карточек для конкретного заведения
+        function loadMoreForCafe(cafe, boxEl) {
+          if (!activeSearchState || !activeSearchState.groupedResults || !activeSearchState.groupedResults[cafe]) {
+            return;
+          }
+          const items = activeSearchState.groupedResults[cafe];
+          const config = CAFE_CONFIG[cafe] || { className: "melnitsa" };
+          const currentLoaded = parseInt(boxEl.getAttribute("data-loaded"), 10) || PER_CAFE_INITIAL;
 
-          const rawValue = searchInput.value;
+          if (currentLoaded >= items.length) {
+            if (activeObserver) activeObserver.unobserve(boxEl);
+            boxEl.remove();
+            return;
+          }
+
+          const nextLoaded = Math.min(currentLoaded + PER_CAFE_BATCH, items.length);
+          const nextItems = items.slice(currentLoaded, nextLoaded);
+
+          const targetUl = resultDiv.querySelector(`.discount-list[data-cafe="${escapeHtml(cafe)}"]`);
+          if (targetUl && nextItems.length > 0) {
+            let chunkHtml = "";
+            for (let i = 0; i < nextItems.length; i++) {
+              chunkHtml += buildCardHtml(
+                nextItems[i],
+                config.className,
+                activeSearchState.completedWords,
+                activeSearchState.incompleteWord
+              );
+            }
+            targetUl.insertAdjacentHTML("beforeend", chunkHtml);
+          }
+
+          boxEl.setAttribute("data-loaded", nextLoaded);
+          const remaining = items.length - nextLoaded;
+          if (remaining <= 0) {
+            if (activeObserver) activeObserver.unobserve(boxEl);
+            boxEl.remove();
+          } else {
+            const btnSpan = boxEl.querySelector(".cafe-more-btn span");
+            if (btnSpan) {
+              btnSpan.textContent = `Показать ещё (осталось ${remaining})`;
+            }
+          }
+        }
+
+        // Функция фактического поиска и мгновенной отрисовки
+        function executeSearch() {
+          cleanupObserver();
+
+          const rawValue = searchInput ? searchInput.value : "";
 
           if (!rawValue || !rawValue.trim()) {
+            lastQuerySignature = "";
+            activeSearchState = null;
             resultDiv.innerHTML = `
               <div class="state-box">
                 <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -315,20 +387,15 @@ document.addEventListener("DOMContentLoaded", function () {
           let incompleteWord = "";
 
           if (hasTrailingSpace) {
-            // Режим точного поиска: после слова поставлен пробел.
-            // Все слова до пробела считаются завершенными и ищутся строго целиком.
             completedWords = tokensBefore.map(w => normalize(w));
             incompleteWord = "";
           } else {
-            // Режим префиксного поиска: курсор сразу после буквы без пробела.
-            // Последнее слово перед курсором считается незавершенным (по маске слово*).
             if (tokensBefore.length > 0) {
               completedWords = tokensBefore.slice(0, -1).map(w => normalize(w));
               incompleteWord = normalize(tokensBefore[tokensBefore.length - 1]);
             }
           }
 
-          // Если есть слова после курсора, они также участвуют как завершенные
           if (tokensAfter.length > 0) {
             completedWords = completedWords.concat(tokensAfter.map(w => normalize(w)));
           }
@@ -337,6 +404,12 @@ document.addEventListener("DOMContentLoaded", function () {
           const trimmedRaw = rawValue.trim();
           const trimmedLower = normalize(trimmedRaw);
           const trimmedNoZeros = trimmedLower.replace(/^0+/, "");
+
+          const querySignature = `${trimmedLower}::${cursorPos}::${completedWords.join(",")}::${incompleteWord}`;
+          if (querySignature === lastQuerySignature) {
+            return;
+          }
+          lastQuerySignature = querySignature;
 
           const matches = allData.filter(item => {
             // 1. Проверка по номеру карты с использованием предвычисленных значений
@@ -349,7 +422,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             const remainingTokens = [...item.tokens];
 
-            // Все completedWords должны строго совпадать с отдельными словами в ФИО
             for (const cWord of completedWords) {
               const matchIdx = remainingTokens.indexOf(cWord);
               if (matchIdx === -1) {
@@ -358,7 +430,6 @@ document.addEventListener("DOMContentLoaded", function () {
               remainingTokens.splice(matchIdx, 1);
             }
 
-            // Если есть незавершенное слово, оно должно быть префиксом хотя бы одного из оставшихся слов ФИО
             if (incompleteWord) {
               const prefixFound = remainingTokens.some(gWord => gWord.startsWith(incompleteWord));
               if (!prefixFound) {
@@ -380,6 +451,12 @@ document.addEventListener("DOMContentLoaded", function () {
               groupedResults[match.cafe].push(match);
             }
 
+            activeSearchState = {
+              groupedResults,
+              completedWords,
+              incompleteWord
+            };
+
             let outputHtml = `
               <div class="results-meta">
                 <span class="results-count">Найдено скидок: ${matches.length}</span>
@@ -392,6 +469,24 @@ document.addEventListener("DOMContentLoaded", function () {
                 displayName: `«${cafe}»`
               };
               const items = groupedResults[cafe];
+              const initialSlice = items.slice(0, PER_CAFE_INITIAL);
+
+              let cardsHtml = "";
+              for (let i = 0; i < initialSlice.length; i++) {
+                cardsHtml += buildCardHtml(initialSlice[i], config.className, completedWords, incompleteWord);
+              }
+
+              let moreBoxHtml = "";
+              if (items.length > PER_CAFE_INITIAL) {
+                const remaining = items.length - PER_CAFE_INITIAL;
+                moreBoxHtml = `
+                  <div class="cafe-more-box" data-cafe="${escapeHtml(cafe)}" data-loaded="${PER_CAFE_INITIAL}">
+                    <button type="button" class="cafe-more-btn">
+                      <span>Показать ещё (осталось ${remaining})</span>
+                    </button>
+                  </div>
+                `;
+              }
 
               outputHtml += `
                 <section class="cafe-group">
@@ -399,88 +494,40 @@ document.addEventListener("DOMContentLoaded", function () {
                     <h3 class="cafe-title">${escapeHtml(config.displayName)}</h3>
                     <span class="cafe-count-badge">${items.length} ${items.length === 1 ? 'карта' : (items.length < 5 ? 'карты' : 'карт')}</span>
                   </div>
-                  <ul class="discount-list" data-cafe="${escapeHtml(cafe)}"></ul>
+                  <ul class="discount-list" data-cafe="${escapeHtml(cafe)}">
+                    ${cardsHtml}
+                  </ul>
+                  ${moreBoxHtml}
                 </section>
               `;
             }
 
             resultDiv.innerHTML = outputHtml;
 
-            // Находим все контейнеры списков карточек
-            const ulElements = resultDiv.querySelectorAll(".discount-list");
-            const cafeUlMap = {};
-            ulElements.forEach(ul => {
-              cafeUlMap[ul.getAttribute("data-cafe")] = ul;
-            });
+            // Вешаем обработчики кликов и IntersectionObserver для плавной догрузки
+            const moreBoxes = resultDiv.querySelectorAll(".cafe-more-box");
+            if (moreBoxes.length > 0) {
+              moreBoxes.forEach(boxEl => {
+                const cafe = boxEl.getAttribute("data-cafe");
+                boxEl.addEventListener("click", () => loadMoreForCafe(cafe, boxEl));
+              });
 
-            // Формируем плоскую очередь карточек для порционной отрисовки
-            const renderQueue = [];
-            for (const cafe in groupedResults) {
-              const targetUl = cafeUlMap[cafe];
-              const items = groupedResults[cafe];
-              const config = CAFE_CONFIG[cafe] || { className: "melnitsa" };
-              for (let i = 0; i < items.length; i++) {
-                renderQueue.push({
-                  item: items[i],
-                  ul: targetUl,
-                  className: config.className
-                });
+              if ("IntersectionObserver" in window) {
+                activeObserver = new IntersectionObserver((entries) => {
+                  entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                      const boxEl = entry.target;
+                      const cafe = boxEl.getAttribute("data-cafe");
+                      loadMoreForCafe(cafe, boxEl);
+                    }
+                  });
+                }, { rootMargin: "350px 0px" });
+
+                moreBoxes.forEach(boxEl => activeObserver.observe(boxEl));
               }
             }
-
-            let queueIndex = 0;
-
-            function renderBatch() {
-              const endIndex = Math.min(queueIndex + BATCH_SIZE, renderQueue.length);
-              let currentUl = null;
-              let htmlChunk = "";
-
-              for (let i = queueIndex; i < endIndex; i++) {
-                const entry = renderQueue[i];
-                if (entry.ul !== currentUl) {
-                  if (currentUl && htmlChunk) {
-                    currentUl.insertAdjacentHTML("beforeend", htmlChunk);
-                  }
-                  currentUl = entry.ul;
-                  htmlChunk = "";
-                }
-
-                const match = entry.item;
-                const formattedDiscount = formatDiscount(match.discount);
-                const highlightedName = highlightGuestName(match.fullName, completedWords, incompleteWord);
-
-                htmlChunk += `
-                  <li class="discount-item">
-                    <div class="guest-info">
-                      <span class="guest-name">${highlightedName}</span>
-                      <div class="card-number-badge">
-                        <span class="card-number-prefix">КАРТА</span>
-                        <span>№ ${escapeHtml(match.id)}</span>
-                      </div>
-                    </div>
-                    <div class="discount-value-pill">
-                      <span class="discount-badge ${entry.className}">${escapeHtml(formattedDiscount)}</span>
-                      <span class="discount-label">скидка</span>
-                    </div>
-                  </li>
-                `;
-              }
-
-              if (currentUl && htmlChunk) {
-                currentUl.insertAdjacentHTML("beforeend", htmlChunk);
-              }
-
-              queueIndex = endIndex;
-              if (queueIndex < renderQueue.length) {
-                currentRenderRafId = requestAnimationFrame(renderBatch);
-              } else {
-                currentRenderRafId = null;
-              }
-            }
-
-            // Запускаем отрисовку первой партии элементов
-            currentRenderRafId = requestAnimationFrame(renderBatch);
           } else {
+            activeSearchState = null;
             resultDiv.innerHTML = `
               <div class="state-box">
                 <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
@@ -495,7 +542,7 @@ document.addEventListener("DOMContentLoaded", function () {
           }
         }
 
-        // Функция поиска с поддержкой debounce (около 140 мс)
+        // Функция поиска с поддержкой debounce
         window.searchDiscount = function (immediate = false) {
           if (searchDebounceTimer) {
             clearTimeout(searchDebounceTimer);
@@ -518,7 +565,7 @@ document.addEventListener("DOMContentLoaded", function () {
           searchDebounceTimer = setTimeout(executeSearch, DEBOUNCE_DELAY);
         };
 
-        // Подписка на изменение позиции курсора стрелками (Backspace и Delete исключены)
+        // Подписка на изменение позиции курсора стрелками
         searchInput.addEventListener("keyup", function (e) {
           if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
             window.searchDiscount(true);
@@ -540,7 +587,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // Сворачивание клавиатуры при тапе / клике вне поля ввода
   function handleDismissKeyboard(e) {
     if (document.activeElement === searchInput) {
-      if (e.target !== searchInput && !e.target.closest("#clearSearchBtn")) {
+      if (
+        e.target !== searchInput &&
+        !e.target.closest("#clearSearchBtn") &&
+        !e.target.closest(".example-tag") &&
+        !e.target.closest(".cafe-more-btn") &&
+        !e.target.closest(".cafe-more-box")
+      ) {
         searchInput.blur();
       }
     }
