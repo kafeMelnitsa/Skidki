@@ -12,9 +12,9 @@ document.addEventListener("DOMContentLoaded", function () {
       className: "bochka",
       displayName: "«Бочка»"
     },
-    "Грандъ Буфетъ": {
+    "Гран Буфет": {
       className: "bufet",
-      displayName: "«Грандъ Буфетъ»"
+      displayName: "«Гран Буфет»"
     }
   };
 
@@ -158,9 +158,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
         const discountRaw = typeof row[1] === "number" ? row[1].toString() : (row[1]?.toString().trim() || "Размер скидки не указан");
 
+        // Предвычисление нормализованного номера карты и номера без ведущих нулей
+        const idLower = normalize(id);
+        const idNoZeros = idLower.replace(/^0+/, "");
+
         return {
           cafe: cafeName,
           id,
+          idLower,
+          idNoZeros,
           fullName,
           discount: discountRaw,
           tokens: tokenizeName(fullName)
@@ -226,14 +232,18 @@ document.addEventListener("DOMContentLoaded", function () {
   window.clearSearch = function () {
     searchInput.value = "";
     if (clearSearchBtn) clearSearchBtn.style.display = "none";
-    window.searchDiscount();
+    if (window.searchDiscount) {
+      window.searchDiscount(true);
+    }
     searchInput.focus();
   };
 
   // Быстрая установка запроса по клику на пример
   window.setQuery = function (val) {
     searchInput.value = val;
-    window.searchDiscount();
+    if (window.searchDiscount) {
+      window.searchDiscount(true);
+    }
     searchInput.focus();
   };
 
@@ -249,7 +259,7 @@ document.addEventListener("DOMContentLoaded", function () {
     Promise.all([
       loadAndProcessExcel("dataMelnitsa.xls", "Мельница"),
       loadAndProcessExcel("dataBochka.xls", "Бочка"),
-      loadAndProcessExcel("dataBufet.xls", "Грандъ Буфетъ")
+      loadAndProcessExcel("dataBufet.xls", "Гран Буфет")
     ])
       .then(results => {
         allData = [].concat(...results);
@@ -257,14 +267,24 @@ document.addEventListener("DOMContentLoaded", function () {
         // Автофокус в поле поиска
         setTimeout(() => searchInput.focus(), 100);
 
-        // Функция поиска с поддержкой префиксного и точного пословного поиска
-        window.searchDiscount = function () {
-          const rawValue = searchInput.value;
+        // Очередь анимации и таймер debounce
+        let searchDebounceTimer = null;
+        let currentRenderRafId = null;
+        const DEBOUNCE_DELAY = 140;
+        const BATCH_SIZE = 120;
 
-          // Показ / скрытие кнопки очистки
-          if (clearSearchBtn) {
-            clearSearchBtn.style.display = rawValue.length > 0 ? "inline-flex" : "none";
+        function cancelPendingRender() {
+          if (currentRenderRafId !== null) {
+            cancelAnimationFrame(currentRenderRafId);
+            currentRenderRafId = null;
           }
+        }
+
+        // Функция фактического поиска и порционной отрисовки
+        function executeSearch() {
+          cancelPendingRender();
+
+          const rawValue = searchInput.value;
 
           if (!rawValue || !rawValue.trim()) {
             resultDiv.innerHTML = `
@@ -319,10 +339,8 @@ document.addEventListener("DOMContentLoaded", function () {
           const trimmedNoZeros = trimmedLower.replace(/^0+/, "");
 
           const matches = allData.filter(item => {
-            // 1. Проверка по номеру карты
-            const idLower = normalize(item.id);
-            const idNoZeros = idLower.replace(/^0+/, "");
-            const isIdMatch = (idLower === trimmedLower) || (trimmedNoZeros.length > 0 && idNoZeros === trimmedNoZeros);
+            // 1. Проверка по номеру карты с использованием предвычисленных значений
+            const isIdMatch = (item.idLower === trimmedLower) || (trimmedNoZeros.length > 0 && item.idNoZeros === trimmedNoZeros);
             if (isIdMatch) return true;
 
             // 2. Проверка по ФИО (пословный точный + префиксный поиск)
@@ -354,12 +372,13 @@ document.addEventListener("DOMContentLoaded", function () {
           if (matches.length > 0) {
             // Группировка результатов по заведениям
             const groupedResults = {};
-            matches.forEach(match => {
+            for (let i = 0; i < matches.length; i++) {
+              const match = matches[i];
               if (!groupedResults[match.cafe]) {
                 groupedResults[match.cafe] = [];
               }
               groupedResults[match.cafe].push(match);
-            });
+            }
 
             let outputHtml = `
               <div class="results-meta">
@@ -380,32 +399,87 @@ document.addEventListener("DOMContentLoaded", function () {
                     <h3 class="cafe-title">${escapeHtml(config.displayName)}</h3>
                     <span class="cafe-count-badge">${items.length} ${items.length === 1 ? 'карта' : (items.length < 5 ? 'карты' : 'карт')}</span>
                   </div>
-                  <ul class="discount-list">
-                    ${items.map(match => {
-                      const formattedDiscount = formatDiscount(match.discount);
-                      const highlightedName = highlightGuestName(match.fullName, completedWords, incompleteWord);
-                      return `
-                        <li class="discount-item">
-                          <div class="guest-info">
-                            <span class="guest-name">${highlightedName}</span>
-                            <div class="card-number-badge">
-                              <span class="card-number-prefix">КАРТА</span>
-                              <span>№ ${escapeHtml(match.id)}</span>
-                            </div>
-                          </div>
-                          <div class="discount-value-pill">
-                            <span class="discount-badge ${config.className}">${escapeHtml(formattedDiscount)}</span>
-                            <span class="discount-label">скидка</span>
-                          </div>
-                        </li>
-                      `;
-                    }).join("")}
-                  </ul>
+                  <ul class="discount-list" data-cafe="${escapeHtml(cafe)}"></ul>
                 </section>
               `;
             }
 
             resultDiv.innerHTML = outputHtml;
+
+            // Находим все контейнеры списков карточек
+            const ulElements = resultDiv.querySelectorAll(".discount-list");
+            const cafeUlMap = {};
+            ulElements.forEach(ul => {
+              cafeUlMap[ul.getAttribute("data-cafe")] = ul;
+            });
+
+            // Формируем плоскую очередь карточек для порционной отрисовки
+            const renderQueue = [];
+            for (const cafe in groupedResults) {
+              const targetUl = cafeUlMap[cafe];
+              const items = groupedResults[cafe];
+              const config = CAFE_CONFIG[cafe] || { className: "melnitsa" };
+              for (let i = 0; i < items.length; i++) {
+                renderQueue.push({
+                  item: items[i],
+                  ul: targetUl,
+                  className: config.className
+                });
+              }
+            }
+
+            let queueIndex = 0;
+
+            function renderBatch() {
+              const endIndex = Math.min(queueIndex + BATCH_SIZE, renderQueue.length);
+              let currentUl = null;
+              let htmlChunk = "";
+
+              for (let i = queueIndex; i < endIndex; i++) {
+                const entry = renderQueue[i];
+                if (entry.ul !== currentUl) {
+                  if (currentUl && htmlChunk) {
+                    currentUl.insertAdjacentHTML("beforeend", htmlChunk);
+                  }
+                  currentUl = entry.ul;
+                  htmlChunk = "";
+                }
+
+                const match = entry.item;
+                const formattedDiscount = formatDiscount(match.discount);
+                const highlightedName = highlightGuestName(match.fullName, completedWords, incompleteWord);
+
+                htmlChunk += `
+                  <li class="discount-item">
+                    <div class="guest-info">
+                      <span class="guest-name">${highlightedName}</span>
+                      <div class="card-number-badge">
+                        <span class="card-number-prefix">КАРТА</span>
+                        <span>№ ${escapeHtml(match.id)}</span>
+                      </div>
+                    </div>
+                    <div class="discount-value-pill">
+                      <span class="discount-badge ${entry.className}">${escapeHtml(formattedDiscount)}</span>
+                      <span class="discount-label">скидка</span>
+                    </div>
+                  </li>
+                `;
+              }
+
+              if (currentUl && htmlChunk) {
+                currentUl.insertAdjacentHTML("beforeend", htmlChunk);
+              }
+
+              queueIndex = endIndex;
+              if (queueIndex < renderQueue.length) {
+                currentRenderRafId = requestAnimationFrame(renderBatch);
+              } else {
+                currentRenderRafId = null;
+              }
+            }
+
+            // Запускаем отрисовку первой партии элементов
+            currentRenderRafId = requestAnimationFrame(renderBatch);
           } else {
             resultDiv.innerHTML = `
               <div class="state-box">
@@ -419,24 +493,61 @@ document.addEventListener("DOMContentLoaded", function () {
               </div>
             `;
           }
+        }
+
+        // Функция поиска с поддержкой debounce (около 140 мс)
+        window.searchDiscount = function (immediate = false) {
+          if (searchDebounceTimer) {
+            clearTimeout(searchDebounceTimer);
+            searchDebounceTimer = null;
+          }
+
+          const rawValue = searchInput ? searchInput.value : "";
+
+          // Показ / скрытие кнопки очистки
+          if (clearSearchBtn) {
+            clearSearchBtn.style.display = rawValue.length > 0 ? "inline-flex" : "none";
+          }
+
+          // При очистке поля (пустое значение) или флаге immediate поиск выполняется сразу
+          if (immediate === true || !rawValue || !rawValue.trim()) {
+            executeSearch();
+            return;
+          }
+
+          searchDebounceTimer = setTimeout(executeSearch, DEBOUNCE_DELAY);
         };
 
-        // Подписка на изменение позиции курсора для динамического переключения режимов
+        // Подписка на изменение позиции курсора стрелками (Backspace и Delete исключены)
         searchInput.addEventListener("keyup", function (e) {
-          if (["ArrowLeft", "ArrowRight", "Home", "End", "Backspace", "Delete"].includes(e.key)) {
-            window.searchDiscount();
+          if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) {
+            window.searchDiscount(true);
           }
         });
-        searchInput.addEventListener("click", window.searchDiscount);
+        searchInput.addEventListener("click", function () {
+          window.searchDiscount(true);
+        });
 
         if (searchInput.value.trim()) {
-          window.searchDiscount();
+          window.searchDiscount(true);
         }
       })
       .catch(error => {
         console.error("Ошибка при загрузке данных:", error);
       });
   })();
+
+  // Сворачивание клавиатуры при тапе / клике вне поля ввода
+  function handleDismissKeyboard(e) {
+    if (document.activeElement === searchInput) {
+      if (e.target !== searchInput && !e.target.closest("#clearSearchBtn")) {
+        searchInput.blur();
+      }
+    }
+  }
+
+  document.addEventListener("touchstart", handleDismissKeyboard, { passive: true });
+  document.addEventListener("mousedown", handleDismissKeyboard);
 
   // Горячая клавиша Escape для очистки поиска
   document.addEventListener("keydown", function (e) {
