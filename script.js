@@ -244,7 +244,6 @@ document.addEventListener("DOMContentLoaded", function () {
         </div>
         <div class="discount-value-pill">
           <span class="discount-badge ${className}">${escapeHtml(formattedDiscount)}</span>
-          <span class="discount-label">скидка</span>
         </div>
       </li>
     `;
