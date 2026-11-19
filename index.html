@@ -2,44 +2,127 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Поиск скидок</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    input {
-      padding: 10px;
-      width: 300px;
-      font-size: 16px;
-    }
-    #result {
-      margin-top: 20px;
-      font-size: 18px;
-    }
-    h3 {
-      color: #333;
-      font-weight: bold;
-    }
-    ul {
-      list-style-type: none;
-      padding: 0;
-    }
-    li {
-      margin-bottom: 10px;
-      border-bottom: 1px solid #ccc;
-      padding-bottom: 5px;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Поиск скидок — Кафе «Мельница»</title>
+  <link rel="icon" type="image/jpeg" href="logo.jpg">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Поиск скидок по фамилии или номеру</h1>
-  <input type="text" id="searchInput" placeholder="Введите фамилию или номер" oninput="searchDiscount()">
-  <div id="result"></div>
+  <div class="app-wrapper">
+    <!-- Заголовок и логотип -->
+    <header class="header">
+      <div class="logo-container">
+        <img src="logo.jpg" onerror="this.onerror=null; this.src='cNRK9YMrsHgR8qyI1ixUNkNMO5oZHA8KWTQU2PNBu7Uq3UQMZpPrTJhFFI_rGxK5c0vvRyViEUaj3X404RVOoBXg.jpg'" alt="Логотип Кафе Мельница" class="logo-img">
+      </div>
+      <h1 class="brand-title">Кафе «Мельница»</h1>
+      <p class="brand-subtitle">Единая система скидочных карт сети заведений</p>
 
-  <!-- Подключение библиотеки XLSX -->
+      <div class="cafe-chips">
+        <span class="cafe-chip melnitsa">Мельница</span>
+        <span class="cafe-chip bochka">Бочка</span>
+        <span class="cafe-chip bufet">Грандъ Буфетъ</span>
+      </div>
+    </header>
+
+    <!-- Поисковая панель -->
+    <main>
+      <div class="search-card">
+        <div class="search-input-wrapper">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Введите фамилию или номер скидки"
+            oninput="searchDiscount()"
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button type="button" class="clear-search-btn" id="clearSearchBtn" title="Очистить" onclick="clearSearch()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <div class="search-hint">
+          <span>Точный поиск по номеру карты или части ФИО</span>
+          <div class="search-examples">
+            <span class="example-tag" onclick="setQuery('0001')">№ 0001</span>
+            <span class="example-tag" onclick="setQuery('2371')">№ 2371</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Контейнер для вывода результатов -->
+      <div id="result">
+        <div class="state-box">
+          <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <div class="state-title">Быстрый поиск скидки</div>
+          <div class="state-desc">Начните вводить фамилию гостя или номер скидочной карты в поле выше</div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Модальное окно ввода пароля -->
+  <div class="modal-overlay" id="passwordModal">
+    <div class="modal-card" id="modalCard">
+      <div class="modal-logo">
+        <img src="logo.jpg" onerror="this.onerror=null; this.src='cNRK9YMrsHgR8qyI1ixUNkNMO5oZHA8KWTQU2PNBu7Uq3UQMZpPrTJhFFI_rGxK5c0vvRyViEUaj3X404RVOoBXg.jpg'" alt="Логотип">
+      </div>
+      <h2 class="modal-title">Кафе «Мельница»</h2>
+      <p class="modal-desc">Введите пароль для доступа к базе скидок</p>
+
+      <form id="passwordForm" onsubmit="handlePasswordSubmit(event)" class="password-form">
+        <div class="password-input-group">
+          <input
+            type="password"
+            id="passwordInput"
+            class="password-input"
+            placeholder="Пароль"
+            autocomplete="current-password"
+            autofocus
+          >
+          <button type="button" class="toggle-password-btn" id="togglePasswordBtn" onclick="togglePasswordVisibility()" title="Показать/скрыть пароль">
+            <svg id="eyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-error" id="modalError">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+          <span id="modalErrorText">Неверный пароль. Попробуйте снова.</span>
+        </div>
+
+        <button type="submit" class="modal-submit-btn" id="submitPasswordBtn">
+          <span>Войти в систему</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Подключение библиотеки XLSX с fallback на CDN -->
   <script src="xlsx.full.min.js"></script>
+  <script>
+    if (typeof XLSX === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"><\/script>');
+    }
+  </script>
   <script src="script.js"></script>
 </body>
 </html>

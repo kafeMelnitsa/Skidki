@@ -1,0 +1,699 @@
+:root {
+  --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  
+  /* Color Palette - Premium Warm Minimalist Cafe Aesthetic */
+  --bg-primary: #FAF8F5;
+  --bg-secondary: #F2ECE4;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #FDFCFB;
+  
+  --text-primary: #1C1917;
+  --text-secondary: #57534E;
+  --text-muted: #8F8881;
+  
+  --accent-primary: #B45309;
+  --accent-hover: #92400E;
+  --accent-light: #FEF3C7;
+  --accent-border: #FDE68A;
+  
+  /* Establishment Brand Themes (no emojis, refined tags) */
+  --cafe-melnitsa-bg: #FEF9EE;
+  --cafe-melnitsa-border: #FCE1AC;
+  --cafe-melnitsa-text: #925805;
+  --cafe-melnitsa-badge: #B45309;
+  
+  --cafe-bochka-bg: #FEF2F2;
+  --cafe-bochka-border: #FECACA;
+  --cafe-bochka-text: #991B1B;
+  --cafe-bochka-badge: #DC2626;
+  
+  --cafe-bufet-bg: #F0FDF4;
+  --cafe-bufet-border: #BBF7D0;
+  --cafe-bufet-text: #166534;
+  --cafe-bufet-badge: #15803D;
+
+  --border-light: #E7E1D8;
+  --border-card: #ECE6DD;
+  --border-focus: #B45309;
+  
+  --shadow-sm: 0 1px 2px rgba(28, 25, 23, 0.04);
+  --shadow-md: 0 4px 16px -2px rgba(28, 25, 23, 0.06), 0 2px 6px -1px rgba(28, 25, 23, 0.03);
+  --shadow-lg: 0 12px 32px -4px rgba(28, 25, 23, 0.08), 0 4px 12px -2px rgba(28, 25, 23, 0.04);
+
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+  
+  --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-family);
+  background-color: var(--bg-primary);
+  background-image: radial-gradient(circle at 50% 0%, #FFFFFF 0%, var(--bg-primary) 70%);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 24px 16px 60px;
+  line-height: 1.5;
+}
+
+.app-wrapper {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+/* Header & Branding */
+.header {
+  text-align: center;
+  margin-bottom: 28px;
+  position: relative;
+}
+
+.logo-container {
+  width: 92px;
+  height: 92px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  padding: 3px;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--border-light);
+  transition: transform 0.25s ease;
+}
+
+.logo-container:hover {
+  transform: scale(1.02);
+}
+
+.logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.brand-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.brand-subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+/* Establishment chips (clean, no emojis, no "Кафе") */
+.cafe-chips {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.cafe-chip {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 5px 14px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+}
+
+.cafe-chip.melnitsa {
+  background: var(--cafe-melnitsa-bg);
+  border: 1px solid var(--cafe-melnitsa-border);
+  color: var(--cafe-melnitsa-text);
+}
+
+.cafe-chip.bochka {
+  background: var(--cafe-bochka-bg);
+  border: 1px solid var(--cafe-bochka-border);
+  color: var(--cafe-bochka-text);
+}
+
+.cafe-chip.bufet {
+  background: var(--cafe-bufet-bg);
+  border: 1px solid var(--cafe-bufet-border);
+  color: var(--cafe-bufet-text);
+}
+
+/* Search Card Container */
+.search-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 24px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-card:focus-within {
+  border-color: var(--accent-primary);
+  box-shadow: var(--shadow-lg), 0 0 0 3px rgba(180, 83, 9, 0.1);
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--text-muted);
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+#searchInput {
+  width: 100%;
+  height: 52px;
+  padding: 0 46px 0 46px;
+  font-size: 17px;
+  font-family: inherit;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  outline: none;
+  transition: var(--transition);
+}
+
+#searchInput:focus {
+  background: #FFFFFF;
+  border-color: var(--accent-primary);
+}
+
+#searchInput::placeholder {
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.clear-search-btn:hover {
+  background: #EAE4DC;
+  color: var(--text-primary);
+}
+
+.search-hint {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 0 4px;
+}
+
+.search-examples {
+  display: flex;
+  gap: 6px;
+}
+
+.example-tag {
+  background: var(--bg-secondary);
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.example-tag:hover {
+  background: var(--accent-light);
+  color: var(--accent-primary);
+}
+
+/* Results Section */
+#result {
+  margin-top: 20px;
+}
+
+.results-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 0 4px;
+}
+
+.results-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+/* Group Section per Establishment */
+.cafe-group {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-lg);
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.cafe-group:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.cafe-header {
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.cafe-header.melnitsa {
+  background: linear-gradient(90deg, var(--cafe-melnitsa-bg) 0%, #FFFFFF 100%);
+  border-left: 4px solid var(--cafe-melnitsa-badge);
+}
+
+.cafe-header.bochka {
+  background: linear-gradient(90deg, var(--cafe-bochka-bg) 0%, #FFFFFF 100%);
+  border-left: 4px solid var(--cafe-bochka-badge);
+}
+
+.cafe-header.bufet {
+  background: linear-gradient(90deg, var(--cafe-bufet-bg) 0%, #FFFFFF 100%);
+  border-left: 4px solid var(--cafe-bufet-badge);
+}
+
+.cafe-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+}
+
+.cafe-count-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  background: #FFFFFF;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+
+.discount-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.discount-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  transition: background 0.15s ease;
+  gap: 16px;
+}
+
+.discount-item:last-child {
+  border-bottom: none;
+}
+
+.discount-item:hover {
+  background: var(--bg-surface-hover);
+}
+
+.guest-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.guest-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.guest-name mark {
+  background: #FEEBC8;
+  color: #7B341E;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 700;
+}
+
+/* High visibility discount number */
+.card-number-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  background: #F4EFEB;
+  border: 1px solid #E0D6CB;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  width: fit-content;
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+.card-number-prefix {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-right: 4px;
+  text-transform: uppercase;
+}
+
+.discount-value-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 80px;
+}
+
+.discount-badge {
+  font-size: 21px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+  letter-spacing: -0.02em;
+  display: inline-flex;
+  align-items: baseline;
+  box-shadow: var(--shadow-sm);
+}
+
+.discount-badge.melnitsa {
+  background: var(--cafe-melnitsa-bg);
+  border: 1px solid var(--cafe-melnitsa-border);
+  color: var(--cafe-melnitsa-badge);
+}
+
+.discount-badge.bochka {
+  background: var(--cafe-bochka-bg);
+  border: 1px solid var(--cafe-bochka-border);
+  color: var(--cafe-bochka-badge);
+}
+
+.discount-badge.bufet {
+  background: var(--cafe-bufet-bg);
+  border: 1px solid var(--cafe-bufet-border);
+  color: var(--cafe-bufet-badge);
+}
+
+.discount-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  margin-top: 3px;
+  font-weight: 600;
+}
+
+/* Empty & Placeholder States */
+.state-box {
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-card);
+  border-radius: var(--radius-lg);
+  padding: 44px 24px;
+  text-align: center;
+  color: var(--text-secondary);
+  margin-top: 10px;
+}
+
+.state-icon {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.state-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  max-width: 400px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* Modal Password Dialog */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(28, 25, 23, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.modal-card {
+  background: #FFFFFF;
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 400px;
+  padding: 32px 28px;
+  text-align: center;
+  box-shadow: var(--shadow-lg);
+  transform: translateY(12px) scale(0.97);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+}
+
+.modal-overlay.active .modal-card {
+  transform: translateY(0) scale(1);
+}
+
+.modal-logo {
+  width: 74px;
+  height: 74px;
+  margin: 0 auto 16px;
+  border-radius: 50%;
+  padding: 3px;
+  background: #FFFFFF;
+  box-shadow: var(--shadow-md), 0 0 0 1px var(--border-light);
+}
+
+.modal-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 22px;
+}
+
+.password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.password-input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input {
+  width: 100%;
+  height: 50px;
+  padding: 0 46px 0 16px;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+  font-family: inherit;
+  text-align: center;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+  outline: none;
+  transition: var(--transition);
+}
+
+.password-input:focus {
+  background: #FFFFFF;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.1);
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.toggle-password-btn:hover {
+  color: var(--text-primary);
+}
+
+.modal-error {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.modal-submit-btn {
+  height: 48px;
+  background: var(--accent-primary);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: var(--transition);
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.25);
+}
+
+.modal-submit-btn:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 12px rgba(180, 83, 9, 0.35);
+  transform: translateY(-1px);
+}
+
+.modal-submit-btn:active {
+  transform: translateY(0);
+}
+
+/* Shake animation for errors */
+@keyframes shakeError {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.shake {
+  animation: shakeError 0.4s ease-in-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  body {
+    padding: 16px 12px 40px;
+  }
+  
+  .logo-container {
+    width: 78px;
+    height: 78px;
+  }
+  
+  .brand-title {
+    font-size: 22px;
+  }
+  
+  .discount-item {
+    padding: 14px 16px;
+  }
+  
+  .card-number-badge {
+    font-size: 14px;
+  }
+  
+  .discount-badge {
+    font-size: 18px;
+    padding: 5px 12px;
+  }
+  
+  .search-card {
+    padding: 14px;
+  }
+  
+  #searchInput {
+    height: 48px;
+    font-size: 16px;
+  }
+}
