@@ -486,15 +486,6 @@ body {
   color: var(--cafe-bufet-badge);
 }
 
-.discount-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
-  margin-top: 3px;
-  font-weight: 600;
-}
-
 /* Empty & Placeholder States */
 .state-box {
   background: var(--bg-surface);
